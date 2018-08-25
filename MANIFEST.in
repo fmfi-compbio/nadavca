@@ -1,0 +1,2 @@
+include nadavca/default/config.yaml
+include nadavca/default/kmer_model.hdf5

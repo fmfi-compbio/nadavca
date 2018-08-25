@@ -1,0 +1,5 @@
+bandwidth: 150
+snp_prior_probability: 0.001
+min_event_length: 2
+model_wobbling: True
+normalization_event_length: 10

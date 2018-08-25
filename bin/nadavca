@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+import os
+import sys
+import argparse
+from nadavca.genome import Genome
+from nadavca.kmer_model import KmerModel
+from nadavca.read import Read
+from nadavca.alignment import ApproximateAligner
+from nadavca.estimator import ProbabilityEstimator, Chunk
+import nadavca
+
+import yaml
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-k", "--kmer_model", help="file with k-mer model to use")
+parser.add_argument("-g", "--group_name",
+                    help="name of group in fast5 files containing basecall info",
+                    default="Analyses/Basecall_1D_000")
+parser.add_argument("-i", "--independent",
+                    help="treat each read independently and output probabilities separately for "
+                         "each read",
+                    action="store_true")
+parser.add_argument("-o", "--output",
+                    help="output file (or directory if --independent is used) for a posteriori "
+                         "probabilities (default: stdout)")
+parser.add_argument("-b", "--bwa_executable", help="command used to run bwa-mem (e. g. bwa)",
+                    default="bwa")
+parser.add_argument("-c", "--configuration", help="config file with parameters for estimator")
+parser.add_argument("reference", help="reference fasta file")
+parser.add_argument("read_basedir", help="base directory of resquiggled fast5 files")
+
+args = parser.parse_args()
+
+config_filename = None
+if args.configuration:
+    config_filename = args.configuration
+else:
+    config_filename = os.path.join(os.path.dirname(nadavca.__file__), 'default', 'config.yaml')
+with open(config_filename, "r") as f:
+    config = yaml.load(f)
+
+kmer_model_filename = None
+if args.kmer_model:
+    kmer_model_filename = args.kmer_model
+else:
+    kmer_model_filename = os.path.join(os.path.dirname(nadavca.__file__), 'default',
+                                       'kmer_model.hdf5')
+kmer_model = None
+
+try:
+    kmer_model = KmerModel.load_from_hdf5(kmer_model_filename)
+except FileNotFoundError:
+    print("failed to load k-mer model: {} not found".format(kmer_model_filename))
+    exit(1)
+
+reference = None
+try:
+    reference = Genome.load_from_fasta(args.reference)[0].bases
+except FileNotFoundError:
+    print("failed to process: reference {} doesn't exist".format(args.reference))
+    exit(1)
+
+approximate_aligner = ApproximateAligner(args.bwa_executable)
+estimator = ProbabilityEstimator(kmer_model, approximate_aligner, config)
+
+read_files = []
+for file in os.listdir(args.read_basedir):
+    path = os.path.join(args.read_basedir, file)
+    if not os.path.isdir(path) and path.endswith(".fast5"):
+        read_files.append(path)
+
+reads = []
+for read_file in read_files:
+    reads.append(Read.load_from_fast5(read_file, args.group_name))
+
+Read.normalize_reads(reads)
+
+if args.independent:
+    if args.output:
+        if not os.path.exists(args.output):
+            os.makedirs(args.output)
+        if not os.path.isdir(args.output):
+            print('Failed to create directory {} (maybe a file with that name exists?)'.format(
+                args.output))
+            exit(1)
+    for read, filename in zip(reads, read_files):
+        output_file = None
+        if args.output:
+            basename = os.path.splitext(os.path.basename(filename))[0]
+            output_file = open(os.path.join(args.output, basename + '.txt'), 'w')
+        else:
+            output_file = sys.stdout
+        chunks = estimator.estimate_probabilities(reference, args.reference, [read])
+        Chunk.print_head(output_file)
+        for chunk in chunks:
+            chunk.print(output_file, reference)
+        if args.output:
+            output_file.close()
+
+else:
+    output_file = None
+    if args.output:
+        output_file = open(args.output, 'w')
+    else:
+        output_file = sys.stdout
+    chunks = estimator.estimate_probabilities(reference, args.reference, reads)
+    Chunk.print_head(output_file)
+    for chunk in chunks:
+        chunk.print(output_file, reference)
+    if args.output:
+        output_file.close()
