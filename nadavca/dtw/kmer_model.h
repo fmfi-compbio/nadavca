@@ -20,6 +20,9 @@ class KmerModel {
   int GetK() const;
   int GetCentralPosition() const;
   int GetAlphabetSize() const;
+  std::vector<double> GetExpectedSignal(const std::vector<int> & reference,
+                                        const std::vector<int> & context_before,
+                                        const std::vector<int> & context_after);
   std::function<Probability(double)> GetDistribution(const ExtendedSequence * sequence,
                                                      int index) const;
   std::function<Probability(double)> GetMixtureDistribution(const ExtendedSequence * sequence,

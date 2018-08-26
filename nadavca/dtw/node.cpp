@@ -73,3 +73,16 @@ Probability TotalLikelihood(const Node & prefix, const Node & suffix) {
   }
   return result;
 }
+
+int MostLikelyIndex(const Node & prefix, const Node & suffix) {
+  Probability max_likelihood = Probability::FromP(0);
+  int best_index = -1;
+  for (int i = prefix.start_index_; i <= prefix.end_index_; i++) {
+    Probability likelihood = prefix[i] * suffix[i];
+    if (likelihood > max_likelihood) {
+      max_likelihood = likelihood;
+      best_index = i;
+    }
+  }
+  return best_index;
+}

@@ -82,7 +82,7 @@ setup(
     author_email='ebatmendijn@gmail.com',
     url='https://github.com/baklazan/nadavca',
     description='NAnopore DAta Variant CAller',
-    install_requires=['pybind11>=2.2', 'simplesam', 'h5py', 'numpy'],
+    install_requires=['pybind11>=2.2', 'simplesam', 'h5py', 'numpy', 'scipy'],
     ext_modules=ext_modules,
     cmdclass={'build_ext': BuildExt},
     scripts=['bin/nadavca'],

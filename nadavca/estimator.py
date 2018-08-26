@@ -40,6 +40,7 @@ class ProbabilityEstimator:
         self.min_event_length = config['min_event_length']
         self.model_wobbling = config['model_wobbling']
         self.normalization_event_length = config['normalization_event_length']
+        self.tweak_signal_normalization = config['tweak_signal_normalization']
 
     def _normalize_log_likelihoods(self, likelihoods, reference):
         shift = likelihoods[0][reference[0]]
@@ -84,6 +85,24 @@ class ProbabilityEstimator:
         context_after = read.sequence[
             end_in_read_sequence: end_in_read_sequence + k - central_position - 1]
         context_after = Genome.to_numerical(context_after)
+
+        if self.tweak_signal_normalization:
+            refined_alignment = nadavca.dtw.refine_alignment(signal=signal,
+                                                             reference=reference_part,
+                                                             context_before=context_before,
+                                                             context_after=context_after,
+                                                             approximate_alignment=signal_mapping,
+                                                             bandwidth=self.bandwidth,
+                                                             min_event_length=self.min_event_length,
+                                                             kmer_model=self.kmer_model)
+
+            refined_alignment = numpy.array(refined_alignment) + extended_start_in_signal
+
+            expected_signal = self.kmer_model.get_expected_signal(reference_part, context_before,
+                                                                  context_after)
+            read.tweak_signal_normalization(refined_alignment, expected_signal)
+            signal = read.tweaked_normalized_signal[
+                extended_start_in_signal: extended_end_in_signal]
 
         log_likelihoods = nadavca.dtw.estimate_log_likelihoods(signal=signal,
                                                                reference=reference_part,

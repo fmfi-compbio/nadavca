@@ -27,6 +27,18 @@ int KmerModel::GetKmerId(const ExtendedSequence * sequence, int index) const {
   return result;
 }
 
+vector<double> KmerModel::GetExpectedSignal(const vector<int> & reference,
+                                            const vector<int> & context_before,
+                                            const vector<int> & context_after) {
+  ExtendedSequence sequence(reference, context_before, context_after);
+  vector<double> result(reference.size());
+  for (unsigned i = 0; i < reference.size(); i++) {
+    int kmer_id = GetKmerId(&sequence, i);
+    result[i] = mean_[kmer_id];
+  }
+  return result;
+}
+
 function<Probability(double)> KmerModel::GetDistribution(const ExtendedSequence * sequence,
                                                          int index) const {
   int kmer_id = GetKmerId(sequence, index);

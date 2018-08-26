@@ -42,3 +42,5 @@ Probability Probability::operator/(Probability other) const {
 }
 
 bool Probability::operator<(Probability other) const { return log_val_ < other.log_val_; }
+
+bool Probability::operator>(Probability other) const { return log_val_ > other.log_val_; }
