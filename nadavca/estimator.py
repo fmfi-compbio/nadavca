@@ -140,12 +140,14 @@ class ProbabilityEstimator:
         for i, _ in enumerate(probabilities):
             context_start = max(0, i - k + 1)
             context_end = min(i + k, len(probabilities))
+            max_likelihood_in_context = numpy.max(log_likelihoods[context_start: context_end])
             snp_hypothesis_prior, nonsnp_hypothesis_prior = self._corrected_priors(
                 context_end - context_start - 1)
             for j, base in enumerate(alphabet):
                 prior_probability = snp_hypothesis_prior if base != reference[
                     i] else nonsnp_hypothesis_prior
-                probabilities[i][j] = numpy.exp(log_likelihoods[i][j]) * prior_probability
+                probabilities[i][j] = numpy.exp(
+                    log_likelihoods[i][j] - max_likelihood_in_context) * prior_probability
                 if base == reference[i]:
                     for i2 in range(context_start, context_end):
                         if i2 == i:
@@ -154,7 +156,8 @@ class ProbabilityEstimator:
                             if base2 == reference[i2]:
                                 continue
                             probabilities[i][j] += numpy.exp(
-                                log_likelihoods[i2][j2]) * snp_hypothesis_prior
+                                log_likelihoods[i2][
+                                    j2] - max_likelihood_in_context) * snp_hypothesis_prior
             probabilities[i] /= sum(probabilities[i])
         return probabilities
 
