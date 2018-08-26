@@ -18,7 +18,9 @@ class Node {
        int min_event_length = 0, bool reverse = false);
   Probability operator[](int index) const;
   friend Probability TotalLikelihood(const Node & prefix, const Node & suffix);
+  friend int MostLikelyIndex(const Node & prefix, const Node & suffix);
 };
 
 Probability TotalLikelihood(const Node & prefix, const Node & suffix);
+int MostLikelyIndex(const Node & prefix, const Node & suffix);
 #endif

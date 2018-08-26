@@ -1,6 +1,7 @@
 import statistics
 import h5py
 import numpy
+from scipy import interpolate
 from nadavca.genome import Genome
 
 
@@ -8,6 +9,7 @@ class Read:
     def __init__(self):
         self.raw_signal = None
         self.normalized_signal = None
+        self.tweaked_normalized_signal = None
         self.strand = None
         self.fastq = None
         self.sequence_to_signal_mapping = None
@@ -51,3 +53,17 @@ class Read:
         scale = statistics.median(abs(values - shift))
         for read in reads:
             read.normalized_signal = (read.raw_signal - shift) / scale
+
+    def tweak_signal_normalization(self, alignment, expected_means):
+        data = []
+        for i, expected_mean in enumerate(expected_means):
+            if alignment[i+1] > alignment[i]:
+                mean = numpy.mean(self.normalized_signal[alignment[i]: alignment[i+1]])
+                if abs(expected_mean - mean) <= 1:
+                    data.append((mean, expected_mean))
+
+        data.sort()
+        means = [d[0] for d in data]
+        expected_means = [d[1] for d in data]
+        spline = interpolate.splrep(means, expected_means, s=len(means))
+        self.tweaked_normalized_signal = interpolate.splev(self.normalized_signal, spline)

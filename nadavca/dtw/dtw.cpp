@@ -109,3 +109,39 @@ vector<vector<double>> EstimateLogLikelihoods(const vector<double> & signal,
   }
   return result;
 }
+
+vector<int> RefineAlignment(const vector<double> & signal, const vector<int> & reference,
+                            const vector<int> & context_before, const vector<int> & context_after,
+                            const vector<vector<int>> & approximate_alignment, int bandwidth,
+                            int min_event_length, const KmerModel & kmer_model) {
+  ExtendedSequence sequence(reference, context_before, context_after);
+  vector<int> band_starts =
+      ComputeBandStarts(approximate_alignment, signal.size(), reference.size(), bandwidth);
+  vector<int> band_ends =
+      ComputeBandEnds(approximate_alignment, signal.size(), reference.size(), bandwidth);
+
+  vector<Node> prefix_likelihoods(reference.size() + 1), suffix_likelihoods(reference.size() + 1);
+
+  prefix_likelihoods[0] = Node(band_starts[0], band_ends[0]);
+  for (unsigned i = 0; i < reference.size(); i++) {
+    Node predecessor = prefix_likelihoods[i];
+    auto distribution = kmer_model.GetDistribution(&sequence, i);
+    prefix_likelihoods[i + 1] = Node(band_starts[i + 1], band_ends[i + 1], predecessor,
+                                     distribution, signal, min_event_length, false);
+  }
+
+  suffix_likelihoods[reference.size()] =
+      Node(band_starts[reference.size()], band_ends[reference.size()]);
+  for (unsigned i = reference.size(); i > 0; i--) {
+    Node predecessor = suffix_likelihoods[i];
+    auto distribution = kmer_model.GetDistribution(&sequence, i - 1);
+    suffix_likelihoods[i - 1] = Node(band_starts[i - 1], band_ends[i - 1], predecessor,
+                                     distribution, signal, min_event_length, true);
+  }
+
+  vector<int> best_signal_index(reference.size() + 1);
+  for (unsigned i = 0; i <= reference.size(); i++) {
+    best_signal_index[i] = MostLikelyIndex(prefix_likelihoods[i], suffix_likelihoods[i]);
+  }
+  return best_signal_index;
+}

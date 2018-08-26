@@ -20,5 +20,6 @@ class Probability {
   Probability operator+(Probability other) const;
   Probability operator/(Probability other) const;
   bool operator<(Probability other) const;
+  bool operator>(Probability other) const;
 };
 #endif
