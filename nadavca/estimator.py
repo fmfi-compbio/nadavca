@@ -24,11 +24,11 @@ class Chunk:
 
     def print(self, file, reference):
         for i in range(self.start, self.end):
+            values_string = '\t'.join(map('{:18.16f}'.format, self.values[i - self.start]))
             file.write('{}\t{}\t{}\t{}\n'.format(i,
                                                  reference[i],
                                                  self.coverage[i - self.start],
-                                                 '\t'.join(map('{:18.16f}'.format,
-                                                               self.values[i - self.start]))))
+                                                 values_string))
 
 
 class ProbabilityEstimator:
@@ -46,8 +46,9 @@ class ProbabilityEstimator:
         shift = likelihoods[0][reference[0]]
         return (likelihoods - shift) / self.normalization_event_length
 
-    def _estimate_log_likelihoods(self, reference, reference_filename, read):
-        approximate_alignment = self.aligner.get_alignment(reference, reference_filename, read)
+    def _estimate_log_likelihoods(self, reference, read):
+        approximate_alignment = self.aligner.get_alignment(read)
+
         if approximate_alignment is None:
             return None
 
@@ -102,7 +103,7 @@ class ProbabilityEstimator:
                                                                   context_after)
             read.tweak_signal_normalization(refined_alignment, expected_signal)
             signal = read.tweaked_normalized_signal[
-                extended_start_in_signal: extended_end_in_signal]
+                extended_start_in_signal : extended_end_in_signal]
 
         log_likelihoods = nadavca.dtw.estimate_log_likelihoods(signal=signal,
                                                                reference=reference_part,
@@ -128,9 +129,9 @@ class ProbabilityEstimator:
 
     def _corrected_priors(self, context_positions):
         c = len(alphabet) - 1
-        p1 = 1 - self.snp_prior
-        p2 = self.snp_prior / c
-        snp_hypothesis_prior = 1 / (p1 / p2 + (1 - context_positions) * c)
+        p_1 = 1 - self.snp_prior
+        p_2 = self.snp_prior / c
+        snp_hypothesis_prior = 1 / (p_1 / p_2 + (1 - context_positions) * c)
         nonsnp_hypothesis_prior = 1 - snp_hypothesis_prior * c
         return snp_hypothesis_prior, nonsnp_hypothesis_prior
 
@@ -149,22 +150,22 @@ class ProbabilityEstimator:
                 probabilities[i][j] = numpy.exp(
                     log_likelihoods[i][j] - max_likelihood_in_context) * prior_probability
                 if base == reference[i]:
-                    for i2 in range(context_start, context_end):
-                        if i2 == i:
+                    for i_2 in range(context_start, context_end):
+                        if i_2 == i:
                             continue
-                        for j2, base2 in enumerate(alphabet):
-                            if base2 == reference[i2]:
+                        for j_2, base2 in enumerate(alphabet):
+                            if base2 == reference[i_2]:
                                 continue
                             probabilities[i][j] += numpy.exp(
-                                log_likelihoods[i2][
-                                    j2] - max_likelihood_in_context) * snp_hypothesis_prior
+                                log_likelihoods[i_2][
+                                    j_2] - max_likelihood_in_context) * snp_hypothesis_prior
             probabilities[i] /= sum(probabilities[i])
         return probabilities
 
-    def estimate_probabilities(self, reference, reference_filename, reads):
+    def estimate_probabilities(self, reference, reads):
         chunks = []
         for read in reads:
-            chunk = self._estimate_log_likelihoods(reference, reference_filename, read)
+            chunk = self._estimate_log_likelihoods(reference, read)
             if chunk is not None:
                 chunks.append(chunk)
         chunks.sort()

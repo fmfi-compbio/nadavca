@@ -60,7 +60,7 @@ except FileNotFoundError:
     print("failed to process: reference {} doesn't exist".format(args.reference))
     exit(1)
 
-approximate_aligner = ApproximateAligner(args.bwa_executable)
+approximate_aligner = ApproximateAligner(args.bwa_executable, reference, args.reference)
 estimator = ProbabilityEstimator(kmer_model, approximate_aligner, config)
 
 read_files = []
@@ -90,7 +90,7 @@ if args.independent:
             output_file = open(os.path.join(args.output, basename + '.txt'), 'w')
         else:
             output_file = sys.stdout
-        chunks = estimator.estimate_probabilities(reference, args.reference, [read])
+        chunks = estimator.estimate_probabilities(reference, [read])
         Chunk.print_head(output_file)
         for chunk in chunks:
             chunk.print(output_file, reference)
@@ -103,7 +103,7 @@ else:
         output_file = open(args.output, 'w')
     else:
         output_file = sys.stdout
-    chunks = estimator.estimate_probabilities(reference, args.reference, reads)
+    chunks = estimator.estimate_probabilities(reference, reads)
     Chunk.print_head(output_file)
     for chunk in chunks:
         chunk.print(output_file, reference)
