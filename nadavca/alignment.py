@@ -1,3 +1,4 @@
+from collections import namedtuple
 import subprocess
 import tempfile
 import os
@@ -6,6 +7,12 @@ import numpy
 import simplesam
 from nadavca.genome import Genome
 
+ApproximateSignalAlignment = namedtuple('ApproximateSignalAlignment',
+                                        ['alignment',
+                                         'signal_range',
+                                         'reference_range',
+                                         'read_sequence_range',
+                                         'reverse_complement'])
 
 class ApproximateAligner:
     def __init__(self, bwa_executable, reference, reference_filename):
@@ -46,7 +53,7 @@ class ApproximateAligner:
                 result.append((read.sequence_to_signal_mapping[index_in_read], index_in_reference))
         return numpy.array(result, dtype=numpy.int)
 
-    def get_alignment(self, read):
+    def _get_base_alignment(self, read):
         if self.bwapy_aligner:
             alignments = self.bwapy_aligner.align_seq(''.join(read.sequence))
             if len(alignments) == 0:
@@ -115,3 +122,39 @@ class ApproximateAligner:
             base_mapping.reverse()
 
         return numpy.array(base_mapping, dtype=numpy.int), is_reverse_complement
+
+    def get_signal_alignment(self, read, bandwidth):
+        base_alignment = self._get_base_alignment(read)
+        if base_alignment is None:
+            return None
+
+        base_mapping, is_reverse_complement = base_alignment
+        signal_mapping = self.convert_mapping(base_mapping, read)
+
+        start_in_reference = signal_mapping[0][1]
+        end_in_reference = signal_mapping[-1][1] + 1
+        signal_mapping[:, 1] -= start_in_reference
+
+        if is_reverse_complement:
+            start_in_reference, end_in_reference = \
+                len(self.reference) - end_in_reference, \
+                len(self.reference) - start_in_reference
+        reference_range = (start_in_reference, end_in_reference)
+
+        start_in_signal = signal_mapping[0][0]
+        end_in_signal = signal_mapping[-1][0] + 1
+        extended_start_in_signal = max(0, start_in_signal - bandwidth)
+        extended_end_in_signal = min(len(read.normalized_signal), end_in_signal + bandwidth)
+        signal_range = (extended_start_in_signal, extended_end_in_signal)
+
+        signal_mapping[:, 0] -= extended_start_in_signal
+
+        start_in_read_sequence = base_mapping[0][0]
+        end_in_read_sequence = base_mapping[-1][0] + 1
+        read_sequence_range = (start_in_read_sequence, end_in_read_sequence)
+
+        return ApproximateSignalAlignment(alignment=signal_mapping,
+                                          signal_range=signal_range,
+                                          reference_range=reference_range,
+                                          read_sequence_range=read_sequence_range,
+                                          reverse_complement=is_reverse_complement)
