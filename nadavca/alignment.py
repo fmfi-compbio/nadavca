@@ -1,9 +1,9 @@
 import subprocess
 import tempfile
 import os
-import simplesam
-import numpy
 import sys
+import numpy
+import simplesam
 from nadavca.genome import Genome
 
 
@@ -16,7 +16,7 @@ class ApproximateAligner:
         # A heuristic to check if bwa index has been run already
         if not os.path.isfile(self.reference_filename + '.bwt'):
             subprocess.run([self.bwa_executable, 'index', self.reference_filename],
-                           stderr=subprocess.PIPE)
+                           stderr=subprocess.PIPE, check=True)
 
         self.bwapy_aligner = None
         try:
@@ -59,17 +59,20 @@ class ApproximateAligner:
         else:
             read_fastq_filename = None
             with tempfile.NamedTemporaryFile(mode='w', delete=False, prefix='nadavca_tmp',
-                                            suffix='.fastq') as file:
+                                             suffix='.fastq') as file:
                 read_fastq_filename = file.name
                 file.write(read.fastq)
 
             bwa_output_filename = None
-            with tempfile.NamedTemporaryFile(delete=True, prefix='nadavca_tmp', suffix='.sam') as file:
+            with tempfile.NamedTemporaryFile(delete=True,
+                                             prefix='nadavca_tmp',
+                                             suffix='.sam') as file:
                 bwa_output_filename = file.name
 
-            subprocess.run([self.bwa_executable, 'mem', self.reference_filename, read_fastq_filename, '-o',
-                            bwa_output_filename],
-                        stderr=subprocess.PIPE)
+            subprocess.run([self.bwa_executable, 'mem', self.reference_filename,
+                            read_fastq_filename, '-o', bwa_output_filename],
+                           stderr=subprocess.PIPE,
+                           check=True)
             with simplesam.Reader(open(bwa_output_filename, 'r')) as reader:
                 sam = reader.next()
                 if not sam.mapped:
@@ -107,7 +110,8 @@ class ApproximateAligner:
 
         if is_reverse_complement:
             for i, val in enumerate(base_mapping):
-                base_mapping[i] = (len(read.sequence) - 1 - val[0], len(self.reference) - 1 - val[1])
+                base_mapping[i] = (len(read.sequence) - 1 - val[0],
+                                   len(self.reference) - 1 - val[1])
             base_mapping.reverse()
 
-        return numpy.array(base_mapping, dtype=numpy.int), is_reverse_complement,
+        return numpy.array(base_mapping, dtype=numpy.int), is_reverse_complement
