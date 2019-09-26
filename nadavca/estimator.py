@@ -46,8 +46,9 @@ class ProbabilityEstimator:
         shift = likelihoods[0][reference[0]]
         return (likelihoods - shift) / self.normalization_event_length
 
-    def _estimate_log_likelihoods(self, reference, reference_filename, read):
-        approximate_alignment = self.aligner.get_alignment(reference, reference_filename, read)
+    def _estimate_log_likelihoods(self, reference, read):
+        approximate_alignment = self.aligner.get_alignment(read)
+
         if approximate_alignment is None:
             return None
 
@@ -161,10 +162,10 @@ class ProbabilityEstimator:
             probabilities[i] /= sum(probabilities[i])
         return probabilities
 
-    def estimate_probabilities(self, reference, reference_filename, reads):
+    def estimate_probabilities(self, reference, reads):
         chunks = []
         for read in reads:
-            chunk = self._estimate_log_likelihoods(reference, reference_filename, read)
+            chunk = self._estimate_log_likelihoods(reference, read)
             if chunk is not None:
                 chunks.append(chunk)
         chunks.sort()
