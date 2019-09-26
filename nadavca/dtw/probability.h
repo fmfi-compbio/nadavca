@@ -2,10 +2,10 @@
 #define NADAVCA_PROBABILITY_H
 
 class Probability {
- private:
+private:
   double log_val_;
 
- public:
+public:
   Probability();
   Probability(double logp);
   static Probability FromP(double p);
@@ -14,8 +14,8 @@ class Probability {
   bool IsNan();
   double GetLog();
 
-  Probability & operator*=(const Probability & other);
-  Probability & operator+=(const Probability & other);
+  Probability &operator*=(const Probability &other);
+  Probability &operator+=(const Probability &other);
   Probability operator*(Probability other) const;
   Probability operator+(Probability other) const;
   Probability operator/(Probability other) const;
