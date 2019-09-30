@@ -7,7 +7,8 @@ import nadavca.defaults
 parser = argparse.ArgumentParser()
 subparsers = parser.add_subparsers()
 
-parser.add_argument("-k", "--kmer_model", help="file with k-mer model to use")
+parser.add_argument("-k", "--kmer_model", help="file with k-mer model to use",
+                    default=nadavca.defaults.KMER_MODEL_FILE)
 parser.add_argument("-g", "--group_name",
                     help="name of group in fast5 files containing basecall info"
                          "(default: {})".format(nadavca.defaults.GROUP_NAME),
@@ -17,7 +18,8 @@ parser.add_argument("read_basedir", help="base directory of fast5 files")
 parser.add_argument("-b", "--bwa_executable", help="command used to run bwa-mem (e. g. bwa)",
                     default=nadavca.defaults.BWA_EXECUTABLE)
 parser.add_argument("-c", "--configuration",
-                    help="config file with parameters for estimator/aligner")
+                    help="config file with parameters for estimator/aligner",
+                    default=nadavca.defaults.CONFIG_FILE)
 
 parser_snp = subparsers.add_parser("snp", help="estimate SNPs")
 parser_snp.add_argument("-i", "--independent",

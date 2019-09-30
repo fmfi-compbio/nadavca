@@ -13,13 +13,11 @@ import yaml
 def estimate_snps(reference_filename,
                   reads,
                   reference=None,
-                  config=None,
-                  kmer_model=None,
+                  config=nadavca.defaults.CONFIG_FILE,
+                  kmer_model=nadavca.defaults.KMER_MODEL_FILE,
                   bwa_executable=nadavca.defaults.BWA_EXECUTABLE,
                   independent=False,
                   group_name=nadavca.defaults.GROUP_NAME):
-    if config is None:
-        config = nadavca.defaults.CONFIG_FILE
     if isinstance(config, str):
         try:
             with open(config, 'r') as file:
@@ -28,8 +26,6 @@ def estimate_snps(reference_filename,
             sys.stderr.write('failed to load config: {} not found\n'.format(config))
             return None
 
-    if kmer_model is None:
-        kmer_model = nadavca.defaults.KMER_MODEL_FILE
     if isinstance(kmer_model, str):
         try:
             kmer_model = KmerModel.load_from_hdf5(kmer_model)
