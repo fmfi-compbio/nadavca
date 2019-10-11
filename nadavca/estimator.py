@@ -24,12 +24,11 @@ class Chunk:
 
     def print(self, file, reference):
         for i in range(self.start, self.end):
+            values_string = '\t'.join(map('{:18.16f}'.format, self.values[i - self.start]))
             file.write('{}\t{}\t{}\t{}\n'.format(i,
                                                  reference[i],
                                                  self.coverage[i - self.start],
-                                                 '\t'.join(map('{:18.16f}'.format,
-                                                               self.values[i - self.start]))))
-
+                                                 values_string))
 
 class ProbabilityEstimator:
     def __init__(self, kmer_model, aligner, config):
@@ -46,78 +45,71 @@ class ProbabilityEstimator:
         shift = likelihoods[0][reference[0]]
         return (likelihoods - shift) / self.normalization_event_length
 
-    def _estimate_log_likelihoods(self, reference, reference_filename, read):
-        approximate_alignment = self.aligner.get_alignment(reference, reference_filename, read)
+    def _get_read_context(self, read, read_sequence_range):
+        start, end = read_sequence_range
+        k = self.kmer_model.get_k()
+        central_position = self.kmer_model.get_central_position()
+        context_before = read.sequence[start - central_position : start]
+        context_before = Genome.to_numerical(context_before)
+        context_after = read.sequence[end : end + k - central_position - 1]
+        context_after = Genome.to_numerical(context_after)
+        return context_before, context_after
+
+    def _estimate_log_likelihoods(self, reference, read):
+        approximate_alignment = self.aligner.get_signal_alignment(read, self.bandwidth)
         if approximate_alignment is None:
             return None
 
-        base_mapping, is_reverse_complement = approximate_alignment
-        signal_mapping = self.aligner.convert_mapping(base_mapping, read)
-
-        start_in_reference = signal_mapping[0][1]
-        end_in_reference = signal_mapping[-1][1] + 1
-        signal_mapping[:, 1] -= start_in_reference
-
-        if is_reverse_complement:
-            start_in_reference, end_in_reference = len(reference) - end_in_reference, len(
-                reference) - start_in_reference
-            reference_part = reference[start_in_reference: end_in_reference]
+        start_in_reference, end_in_reference = approximate_alignment.reference_range
+        reference_part = reference[start_in_reference: end_in_reference]
+        if approximate_alignment.reverse_complement:
             reference_part = Genome.reverse_complement(reference_part)
-        else:
-            reference_part = reference[start_in_reference: end_in_reference]
         reference_part = Genome.to_numerical(reference_part)
 
-        start_in_signal = signal_mapping[0][0]
-        end_in_signal = signal_mapping[-1][0] + 1
-        extended_start_in_signal = max(0, start_in_signal - self.bandwidth)
-        extended_end_in_signal = min(len(read.normalized_signal), end_in_signal + self.bandwidth)
-        signal = read.normalized_signal[extended_start_in_signal: extended_end_in_signal]
-
-        signal_mapping[:, 0] -= extended_start_in_signal
-
-        start_in_read_sequence = base_mapping[0][0]
-        end_in_read_sequence = base_mapping[-1][0] + 1
-        k = self.kmer_model.get_k()
-        central_position = self.kmer_model.get_central_position()
-        context_before = read.sequence[
-            start_in_read_sequence - central_position: start_in_read_sequence]
-        context_before = Genome.to_numerical(context_before)
-        context_after = read.sequence[
-            end_in_read_sequence: end_in_read_sequence + k - central_position - 1]
-        context_after = Genome.to_numerical(context_after)
+        start_in_signal, end_in_signal = approximate_alignment.signal_range
+        signal = read.normalized_signal[start_in_signal : end_in_signal]
+        context_before, context_after = \
+            self._get_read_context(read,
+                                   approximate_alignment.read_sequence_range)
 
         if self.tweak_signal_normalization:
-            refined_alignment = nadavca.dtw.refine_alignment(signal=signal,
-                                                             reference=reference_part,
-                                                             context_before=context_before,
-                                                             context_after=context_after,
-                                                             approximate_alignment=signal_mapping,
-                                                             bandwidth=self.bandwidth,
-                                                             min_event_length=self.min_event_length,
-                                                             kmer_model=self.kmer_model)
+            refined_alignment = nadavca.dtw.refine_alignment(
+                signal=signal,
+                reference=reference_part,
+                context_before=context_before,
+                context_after=context_after,
+                approximate_alignment=approximate_alignment.alignment,
+                bandwidth=self.bandwidth,
+                min_event_length=self.min_event_length,
+                kmer_model=self.kmer_model
+            )
 
-            refined_alignment = numpy.array(refined_alignment) + extended_start_in_signal
+            refined_alignment = numpy.array(refined_alignment) + start_in_signal
 
-            expected_signal = self.kmer_model.get_expected_signal(reference_part, context_before,
-                                                                  context_after)
+            expected_signal = self.kmer_model.get_expected_signal(
+                reference_part,
+                context_before,
+                context_after
+            )
             read.tweak_signal_normalization(refined_alignment, expected_signal)
-            signal = read.tweaked_normalized_signal[
-                extended_start_in_signal: extended_end_in_signal]
+            signal = read.tweaked_normalized_signal[start_in_signal : end_in_signal]
 
-        log_likelihoods = nadavca.dtw.estimate_log_likelihoods(signal=signal,
-                                                               reference=reference_part,
-                                                               context_before=context_before,
-                                                               context_after=context_after,
-                                                               approximate_alignment=signal_mapping,
-                                                               bandwidth=self.bandwidth,
-                                                               min_event_length=self.min_event_length,
-                                                               kmer_model=self.kmer_model,
-                                                               model_wobbling=self.model_wobbling)
+        log_likelihoods = nadavca.dtw.estimate_log_likelihoods(
+            signal=signal,
+            reference=reference_part,
+            context_before=context_before,
+            context_after=context_after,
+            approximate_alignment=approximate_alignment.alignment,
+            bandwidth=self.bandwidth,
+            min_event_length=self.min_event_length,
+            kmer_model=self.kmer_model,
+            model_wobbling=self.model_wobbling
+        )
 
         log_likelihoods = numpy.array(log_likelihoods)
         log_likelihoods = self._normalize_log_likelihoods(log_likelihoods, reference_part)
 
-        if is_reverse_complement:
+        if approximate_alignment.reverse_complement:
             complement_likelihoods = numpy.zeros(log_likelihoods.shape, dtype=numpy.float)
             for i, line in enumerate(log_likelihoods):
                 for j in range(len(alphabet)):
@@ -128,9 +120,9 @@ class ProbabilityEstimator:
 
     def _corrected_priors(self, context_positions):
         c = len(alphabet) - 1
-        p1 = 1 - self.snp_prior
-        p2 = self.snp_prior / c
-        snp_hypothesis_prior = 1 / (p1 / p2 + (1 - context_positions) * c)
+        p_1 = 1 - self.snp_prior
+        p_2 = self.snp_prior / c
+        snp_hypothesis_prior = 1 / (p_1 / p_2 + (1 - context_positions) * c)
         nonsnp_hypothesis_prior = 1 - snp_hypothesis_prior * c
         return snp_hypothesis_prior, nonsnp_hypothesis_prior
 
@@ -149,22 +141,60 @@ class ProbabilityEstimator:
                 probabilities[i][j] = numpy.exp(
                     log_likelihoods[i][j] - max_likelihood_in_context) * prior_probability
                 if base == reference[i]:
-                    for i2 in range(context_start, context_end):
-                        if i2 == i:
+                    for i_2 in range(context_start, context_end):
+                        if i_2 == i:
                             continue
-                        for j2, base2 in enumerate(alphabet):
-                            if base2 == reference[i2]:
+                        for j_2, base2 in enumerate(alphabet):
+                            if base2 == reference[i_2]:
                                 continue
                             probabilities[i][j] += numpy.exp(
-                                log_likelihoods[i2][
-                                    j2] - max_likelihood_in_context) * snp_hypothesis_prior
+                                log_likelihoods[i_2][
+                                    j_2] - max_likelihood_in_context) * snp_hypothesis_prior
             probabilities[i] /= sum(probabilities[i])
         return probabilities
 
-    def estimate_probabilities(self, reference, reference_filename, reads):
+    def get_refined_alignment(self, reference, read):
+        approximate_alignment = self.aligner.get_signal_alignment(read, self.bandwidth)
+        if approximate_alignment is None:
+            return None
+
+        start_in_reference, end_in_reference = approximate_alignment.reference_range
+        reference_part = reference[start_in_reference: end_in_reference]
+        if approximate_alignment.reverse_complement:
+            reference_part = Genome.reverse_complement(reference_part)
+        reference_part = Genome.to_numerical(reference_part)
+
+        start_in_signal, end_in_signal = approximate_alignment.signal_range
+        signal = read.normalized_signal[start_in_signal : end_in_signal]
+        context_before, context_after = \
+            self._get_read_context(read,
+                                   approximate_alignment.read_sequence_range)
+
+        refined_alignment = nadavca.dtw.refine_alignment(
+            signal=signal,
+            reference=reference_part,
+            context_before=context_before,
+            context_after=context_after,
+            approximate_alignment=approximate_alignment.alignment,
+            bandwidth=self.bandwidth,
+            min_event_length=self.min_event_length,
+            kmer_model=self.kmer_model
+        )
+
+        result = numpy.zeros((len(refined_alignment), 2), dtype=int)
+        for reference_position, signal_position in enumerate(refined_alignment):
+            result[reference_position][0] = signal_position + start_in_signal
+            if approximate_alignment.reverse_complement:
+                result[reference_position][1] = end_in_reference - reference_position
+            else:
+                result[reference_position][1] = start_in_reference + reference_position
+        return result
+
+
+    def estimate_probabilities(self, reference, reads):
         chunks = []
         for read in reads:
-            chunk = self._estimate_log_likelihoods(reference, reference_filename, read)
+            chunk = self._estimate_log_likelihoods(reference, read)
             if chunk is not None:
                 chunks.append(chunk)
         chunks.sort()
