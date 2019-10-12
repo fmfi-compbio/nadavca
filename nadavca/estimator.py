@@ -153,16 +153,13 @@ class ProbabilityEstimator:
             probabilities[i] /= sum(probabilities[i])
         return probabilities
 
-    def get_refined_alignment(self, reference, read):
+    def get_refined_alignment(self, read):
         approximate_alignment = self.aligner.get_signal_alignment(read, self.bandwidth)
         if approximate_alignment is None:
             return None
 
         start_in_reference, end_in_reference = approximate_alignment.reference_range
-        reference_part = reference[start_in_reference: end_in_reference]
-        if approximate_alignment.reverse_complement:
-            reference_part = Genome.reverse_complement(reference_part)
-        reference_part = Genome.to_numerical(reference_part)
+        reference_part = Genome.to_numerical(approximate_alignment.reference_part)
 
         start_in_signal, end_in_signal = approximate_alignment.signal_range
         signal = read.normalized_signal[start_in_signal : end_in_signal]
