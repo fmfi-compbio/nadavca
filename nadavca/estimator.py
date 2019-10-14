@@ -185,7 +185,7 @@ class ProbabilityEstimator:
                 result[reference_position][1] = end_in_reference - reference_position
             else:
                 result[reference_position][1] = start_in_reference + reference_position
-        return result
+        return approximate_alignment, result
 
 
     def estimate_probabilities(self, reference, reads):

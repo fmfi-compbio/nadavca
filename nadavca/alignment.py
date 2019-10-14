@@ -13,7 +13,8 @@ ApproximateSignalAlignment = namedtuple('ApproximateSignalAlignment',
                                          'reference_range',
                                          'read_sequence_range',
                                          'reverse_complement',
-                                         'reference_part'])
+                                         'reference_part',
+                                         'contig_name'])
 
 class ApproximateAligner:
     # Reference here is only for backwards compatibility with single contig mode
@@ -176,5 +177,6 @@ class ApproximateAligner:
                                           reference_range=reference_range,
                                           read_sequence_range=read_sequence_range,
                                           reverse_complement=is_reverse_complement,
-                                          reference_part=reference_part
+                                          reference_part=reference_part,
+                                          contig_name=contig_name
                                           )
