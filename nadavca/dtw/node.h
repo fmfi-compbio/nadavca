@@ -4,25 +4,46 @@
 #include <probability.h>
 #include <vector>
 
-template <class ScoreJoiningStrategy> class Node {
-private:
+class Node {
+protected:
   int start_index_, end_index_;
-  std::vector<Probability> log_likelihoods_;
-  Probability &GetReference(int index);
+  std::vector<Probability> likelihoods_;
 
 public:
   Node();
-  Node(int start_index, int end_index);
-  Node(int start_index, int end_index,
-       const Node<ScoreJoiningStrategy> &predecessor,
-       std::function<Probability(double)> distribution,
-       const std::vector<double> &signal, int min_event_length = 0,
-       bool reverse = false);
+  Node(int start_index, int end_index, double p = 1.0);
+  Probability &GetReference(int index);
   Probability operator[](int index) const;
 
-  static Probability TotalLikelihood(const Node<ScoreJoiningStrategy> &prefix,
-                                     const Node<ScoreJoiningStrategy> &suffix);
+  int GetStartIndex() const;
+  int GetEndIndex() const;
+
+  Node operator*(const Node &other) const;
+
+  static Probability TotalLikelihood(const Node &prefix, const Node &suffix);
+
+  template <class ScoreJoiningStrategy>
+  static Node NextRow(int start_index, int end_index, const Node &predecessor,
+                      std::function<Probability(double)> distribution,
+                      const std::vector<double> &signal,
+                      int min_event_length = 0, bool reverse = false);
 };
 
-#include <node_impl.h>
+class PathSearchingNode : public Node {
+private:
+  std::vector<int> previous_;
+
+public:
+  PathSearchingNode();
+  PathSearchingNode(const Node &from);
+
+  int &GetPrevious(int index);
+
+  int GetBestIndex() const;
+  static PathSearchingNode NextRow(const Node &values,
+                                   const PathSearchingNode &predecessor,
+                                   int min_event_length);
+};
+
+#include <node_next_row.h>
 #endif

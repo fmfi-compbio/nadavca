@@ -25,6 +25,7 @@ ext_modules = [
                  'nadavca/dtw/probability.cpp',
                  'nadavca/dtw/sequence.cpp',
                  'nadavca/dtw/joining_strategy.cpp',
+                 'nadavca/dtw/node.cpp',
                  'nadavca/dtw/dtw.cpp'],
         include_dirs=[
             'nadavca/dtw/',
