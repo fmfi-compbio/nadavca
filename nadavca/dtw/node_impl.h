@@ -94,19 +94,4 @@ Probability Node<ScoreJoiningStrategy>::TotalLikelihood(
   return result;
 }
 
-template <class ScoreJoiningStrategy>
-int Node<ScoreJoiningStrategy>::MostLikelyIndex(
-    const Node<ScoreJoiningStrategy> &prefix,
-    const Node<ScoreJoiningStrategy> &suffix) {
-  Probability max_likelihood = Probability::FromP(0);
-  int best_index = -1;
-  for (int i = prefix.start_index_; i <= prefix.end_index_; i++) {
-    Probability likelihood = prefix[i] * suffix[i];
-    if (likelihood > max_likelihood) {
-      max_likelihood = likelihood;
-      best_index = i;
-    }
-  }
-  return best_index;
-}
 #endif
