@@ -25,5 +25,5 @@ PYBIND11_MODULE(dtw, m) {
         py::arg("reference"), py::arg("context_before"),
         py::arg("context_after"), py::arg("approximate_alignment"),
         py::arg("bandwidth"), py::arg("min_event_length"),
-        py::arg("kmer_model"));
+        py::arg("kmer_model"), py::arg("model_transitions"));
 }

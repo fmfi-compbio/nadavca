@@ -56,11 +56,10 @@ class Read:
 
     def tweak_signal_normalization(self, alignment, expected_means):
         data = []
-        for i, expected_mean in enumerate(expected_means):
-            if alignment[i+1] > alignment[i]:
-                mean = numpy.mean(self.normalized_signal[alignment[i]: alignment[i+1]])
-                if abs(expected_mean - mean) <= 1:
-                    data.append((mean, expected_mean))
+        for event, expected_mean in zip(alignment, expected_means):
+            mean = numpy.mean(self.normalized_signal[event[0]: event[1]])
+            if abs(expected_mean - mean) <= 1:
+                data.append((mean, expected_mean))
 
         data.sort()
         means = [d[0] for d in data]

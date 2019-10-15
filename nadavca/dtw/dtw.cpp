@@ -130,59 +130,97 @@ vector<vector<double>> EstimateLogLikelihoods(
   return result;
 }
 
-vector<int> RefineAlignment(const vector<double> &signal,
-                            const vector<int> &reference,
-                            const vector<int> &context_before,
-                            const vector<int> &context_after,
-                            const vector<vector<int>> &approximate_alignment,
-                            int bandwidth, int min_event_length,
-                            const KmerModel &kmer_model) {
+vector<vector<int>> RefineAlignment(
+    const vector<double> &signal, const vector<int> &reference,
+    const vector<int> &context_before, const vector<int> &context_after,
+    const vector<vector<int>> &approximate_alignment, int bandwidth,
+    int min_event_length, const KmerModel &kmer_model, bool model_transitions) {
   ExtendedSequence sequence(reference, context_before, context_after);
   vector<int> band_starts = ComputeBandStarts(
       approximate_alignment, signal.size(), reference.size(), bandwidth);
   vector<int> band_ends = ComputeBandEnds(approximate_alignment, signal.size(),
                                           reference.size(), bandwidth);
 
-  vector<Node> prefix_likelihoods(reference.size() + 1),
-      suffix_likelihoods(reference.size() + 1);
+  int rows_count;
+  if (model_transitions) {
+    rows_count = reference.size() * 2;
+    vector<int> new_band_starts(rows_count);
+    vector<int> new_band_ends(rows_count);
+    for (unsigned i = 0; i < reference.size(); i++) {
+      new_band_starts[i * 2] = band_starts[i];
+      new_band_ends[i * 2] = band_ends[i];
+      new_band_starts[i * 2 + 1] = band_starts[i + 1];
+      new_band_ends[i * 2 + 1] = band_ends[i + 1];
+    }
+    band_starts = new_band_starts;
+    band_ends = new_band_ends;
+  } else {
+    rows_count = reference.size() + 1;
+  }
+
+  vector<function<Probability(double)>> distributions(rows_count - 1);
+  vector<Node> prefix_likelihoods(rows_count), suffix_likelihoods(rows_count);
+  vector<int> min_event_lengths(rows_count - 1);
+
+  if (model_transitions) {
+    for (unsigned i = 0; i < reference.size(); i++) {
+      distributions[i * 2] = kmer_model.GetDistribution(&sequence, i);
+      min_event_lengths[i * 2] = min_event_length;
+      if (i + 1 < reference.size()) {
+        distributions[i * 2 + 1] =
+            kmer_model.GetTransitionDistribution(&sequence, i, i + 1);
+        min_event_lengths[i * 2 + 1] = 0;
+      }
+    }
+  } else {
+    for (unsigned i = 0; i < reference.size(); i++) {
+      distributions[i] = kmer_model.GetDistribution(&sequence, i);
+      min_event_lengths[i] = min_event_length;
+    }
+  }
 
   prefix_likelihoods[0] = Node(band_starts[0], band_ends[0]);
-  for (unsigned i = 0; i < reference.size(); i++) {
-    Node predecessor = prefix_likelihoods[i];
-    auto distribution = kmer_model.GetDistribution(&sequence, i);
+  for (int i = 0; i + 1 < rows_count; i++) {
+    const Node &predecessor = prefix_likelihoods[i];
     prefix_likelihoods[i + 1] = Node::NextRow<JoiningStrategySum>(
-        band_starts[i + 1], band_ends[i + 1], predecessor, distribution, signal,
-        min_event_length, false);
+        band_starts[i + 1], band_ends[i + 1], predecessor, distributions[i],
+        signal, min_event_lengths[i], false);
   }
 
-  suffix_likelihoods[reference.size()] =
-      Node(band_starts[reference.size()], band_ends[reference.size()]);
-  for (unsigned i = reference.size(); i > 0; i--) {
-    Node predecessor = suffix_likelihoods[i];
-    auto distribution = kmer_model.GetDistribution(&sequence, i - 1);
+  suffix_likelihoods[rows_count - 1] =
+      Node(band_starts[rows_count - 1], band_ends[rows_count - 1]);
+  for (int i = rows_count - 1; i > 0; i--) {
+    const Node predecessor = suffix_likelihoods[i];
     suffix_likelihoods[i - 1] = Node::NextRow<JoiningStrategySum>(
-        band_starts[i - 1], band_ends[i - 1], predecessor, distribution, signal,
-        min_event_length, true);
+        band_starts[i - 1], band_ends[i - 1], predecessor, distributions[i - 1],
+        signal, min_event_lengths[i - 1], true);
   }
 
-  vector<Node> all_paths_sum(reference.size() + 1);
-  for (unsigned i = 0; i <= reference.size(); i++) {
+  vector<Node> all_paths_sum(rows_count);
+  for (int i = 0; i < rows_count; i++) {
     all_paths_sum[i] = prefix_likelihoods[i] * suffix_likelihoods[i];
   }
 
-  vector<PathSearchingNode> dp(reference.size() + 1);
+  vector<PathSearchingNode> dp(rows_count);
   dp[0] = PathSearchingNode(all_paths_sum[0]);
-  for (unsigned i = 1; i <= reference.size(); i++) {
+  for (int i = 1; i < rows_count; i++) {
     dp[i] = PathSearchingNode::NextRow(all_paths_sum[i], dp[i - 1],
-                                       min_event_length);
+                                       min_event_lengths[i - 1]);
   }
 
-  vector<int> best_signal_index(reference.size() + 1);
-  int best_index = dp[reference.size()].GetBestIndex();
+  vector<vector<int>> result(reference.size(), vector<int>(2));
+  int best_index = dp[rows_count - 1].GetBestIndex();
 
-  for (int i = reference.size(); i >= 0; i--) {
-    best_signal_index[i] = best_index;
+  for (int i = rows_count - 1; i >= 0; i--) {
+    if (model_transitions) {
+      result[i / 2][i % 2] = best_index;
+    } else {
+      if (i > 0)
+        result[i - 1][1] = best_index;
+      if (i + 1 < rows_count)
+        result[i][0] = best_index;
+    }
     best_index = dp[i].GetPrevious(best_index);
   }
-  return best_signal_index;
+  return result;
 }
