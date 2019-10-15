@@ -22,8 +22,6 @@ public:
 
   static Probability TotalLikelihood(const Node<ScoreJoiningStrategy> &prefix,
                                      const Node<ScoreJoiningStrategy> &suffix);
-  static int MostLikelyIndex(const Node<ScoreJoiningStrategy> &prefix,
-                             const Node<ScoreJoiningStrategy> &suffix);
 };
 
 #include <node_impl.h>
