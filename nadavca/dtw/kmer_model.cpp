@@ -75,11 +75,19 @@ KmerModel::GetTransitionDistribution(const ExtendedSequence *sequence,
   }
   if (mean1 > mean2)
     swap(mean1, mean2);
-  Probability p_in = Probability::FromP(1.0 / (mean2 - mean1));
 
-  return [mean1, mean2, p_in, p_out](double x) {
+  Probability p_in = Probability::FromP(0.01);
+
+  double mean = (mean1 + mean2) / 2.0;
+  double sigma = (mean2 - mean1) / 3.0;
+  double ac = log(1 / sqrt(2 * M_PI * sigma * sigma) * 0.1);
+  double mc = 1 / (2 * sigma * sigma);
+  return [mean1, mean2, p_in, p_out, mean, sigma, ac, mc](double x) {
     if (x < mean1 || x > mean2)
       return p_out;
-    return p_in;
+    //    return p_in;
+
+    double diff = x - mean;
+    return Probability(ac - diff * diff * mc);
   };
 }
