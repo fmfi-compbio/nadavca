@@ -26,7 +26,9 @@ public:
   static Node NextRow(int start_index, int end_index, const Node &predecessor,
                       std::function<Probability(double)> distribution,
                       const std::vector<double> &signal,
-                      int min_event_length = 0, bool reverse = false);
+                      const std::vector<Probability> &short_event_acceptability,
+                      bool reverse = false);
+  // short_event_acceptability must contain at least one element
 };
 
 class PathSearchingNode : public Node {

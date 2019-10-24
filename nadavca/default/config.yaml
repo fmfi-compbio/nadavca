@@ -1,6 +1,9 @@
 bandwidth: 150
 snp_prior_probability: 0.001
-min_event_length: 2
+min_alignment_event_length: 2
+short_event_acceptability:
+  - 0.0
+  - 0.0
 model_wobbling: True
 model_transitions: False
 tweak_signal_normalization: True

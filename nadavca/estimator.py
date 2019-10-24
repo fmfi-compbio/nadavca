@@ -36,7 +36,8 @@ class ProbabilityEstimator:
         self.aligner = aligner
         self.bandwidth = config['bandwidth']
         self.snp_prior = config['snp_prior_probability']
-        self.min_event_length = config['min_event_length']
+        self.min_event_length = config['min_alignment_event_length']
+        self.short_event_acceptability = config['short_event_acceptability']
         self.model_wobbling = config['model_wobbling']
         self.model_transitions = config['model_transitions']
         self.normalization_event_length = config['normalization_event_length']
@@ -81,6 +82,7 @@ class ProbabilityEstimator:
                 context_after=context_after,
                 approximate_alignment=approximate_alignment.alignment,
                 bandwidth=self.bandwidth,
+                short_event_acceptability=self.short_event_acceptability,
                 min_event_length=self.min_event_length,
                 kmer_model=self.kmer_model,
                 model_transitions=False
@@ -103,7 +105,7 @@ class ProbabilityEstimator:
             context_after=context_after,
             approximate_alignment=approximate_alignment.alignment,
             bandwidth=self.bandwidth,
-            min_event_length=self.min_event_length,
+            short_event_acceptability=self.short_event_acceptability,
             kmer_model=self.kmer_model,
             model_wobbling=self.model_wobbling
         )
@@ -176,6 +178,7 @@ class ProbabilityEstimator:
             context_after=context_after,
             approximate_alignment=approximate_alignment.alignment,
             bandwidth=self.bandwidth,
+            short_event_acceptability=self.short_event_acceptability,
             min_event_length=self.min_event_length,
             kmer_model=self.kmer_model,
             model_transitions=self.model_transitions
