@@ -60,3 +60,34 @@ KmerModel::GetMixtureDistribution(const ExtendedSequence *sequence, int index1,
     return (distribution1(x) + distribution2(x)) / 2;
   };
 }
+
+function<Probability(double)>
+KmerModel::GetTransitionDistribution(const ExtendedSequence *sequence,
+                                     int index1, int index2) const {
+  int kmer_id1 = GetKmerId(sequence, index1);
+  int kmer_id2 = GetKmerId(sequence, index2);
+  double mean1 = mean_[kmer_id1];
+  double mean2 = mean_[kmer_id2];
+
+  Probability p_out = Probability::FromP(0.0);
+  if (mean1 == mean2) {
+    return [p_out](double x) { return p_out; };
+  }
+  if (mean1 > mean2)
+    swap(mean1, mean2);
+
+  Probability p_in = Probability::FromP(0.01);
+
+  double mean = (mean1 + mean2) / 2.0;
+  double sigma = (mean2 - mean1) / 3.0;
+  double ac = log(1 / sqrt(2 * M_PI * sigma * sigma) * 0.1);
+  double mc = 1 / (2 * sigma * sigma);
+  return [mean1, mean2, p_in, p_out, mean, sigma, ac, mc](double x) {
+    if (x < mean1 || x > mean2)
+      return p_out;
+    //    return p_in;
+
+    double diff = x - mean;
+    return Probability(ac - diff * diff * mc);
+  };
+}

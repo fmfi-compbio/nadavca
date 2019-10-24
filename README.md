@@ -123,12 +123,13 @@ where parameters have the same meaning as in `nadavca.estimate_snps()`.
 The return value of `nadavca.align_signal()` is a list of results for each read,
 in the same order as they appeared on the input. Thus, it is advisable to pass reads to `nadavca.align_signal()` as a list. 
 
-If read was not aligned the result is None. Otherwise each results is a tuple
-of ApproximateAlignment and DTW alignment. 
-DTW alignment is an array with two columns: the first
-column contains positions in the signal, the second column contains 
-corresponding positions in the reference sequence. Positions in signal are 
-in ascending order. Positions in reference are in ascending or descending
+If read was not aligned the result is `None`.
+Otherwise each results is a tuple of ApproximateAlignment and DTW alignment. 
+DTW alignment is an array with three columns: 
+the first column contains positions in the reference sequence,
+the second and third column contain start and end of correspoinding event in the signal, respectively.
+Positions in signal are in ascending order.
+Positions in reference are in ascending or descending
 order, for forward strands and reverse strands, respectively.
 
 `nadavca.align_signal()` also has a command-line interface:

@@ -28,5 +28,8 @@ public:
   std::function<Probability(double)>
   GetMixtureDistribution(const ExtendedSequence *sequence, int index1,
                          int index2) const;
+  std::function<Probability(double)>
+  GetTransitionDistribution(const ExtendedSequence *sequence, int index1,
+                            int index2) const;
 };
 #endif

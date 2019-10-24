@@ -38,6 +38,7 @@ class ProbabilityEstimator:
         self.snp_prior = config['snp_prior_probability']
         self.min_event_length = config['min_event_length']
         self.model_wobbling = config['model_wobbling']
+        self.model_transitions = config['model_transitions']
         self.normalization_event_length = config['normalization_event_length']
         self.tweak_signal_normalization = config['tweak_signal_normalization']
 
@@ -81,7 +82,8 @@ class ProbabilityEstimator:
                 approximate_alignment=approximate_alignment.alignment,
                 bandwidth=self.bandwidth,
                 min_event_length=self.min_event_length,
-                kmer_model=self.kmer_model
+                kmer_model=self.kmer_model,
+                model_transitions=False
             )
 
             refined_alignment = numpy.array(refined_alignment) + start_in_signal
@@ -175,16 +177,19 @@ class ProbabilityEstimator:
             approximate_alignment=approximate_alignment.alignment,
             bandwidth=self.bandwidth,
             min_event_length=self.min_event_length,
-            kmer_model=self.kmer_model
+            kmer_model=self.kmer_model,
+            model_transitions=self.model_transitions
         )
 
-        result = numpy.zeros((len(refined_alignment), 2), dtype=int)
-        for reference_position, signal_position in enumerate(refined_alignment):
-            result[reference_position][0] = signal_position + start_in_signal
+        result = numpy.zeros((len(refined_alignment), 3), dtype=int)
+        for reference_position, event_range in enumerate(refined_alignment):
+            event_start, event_end = event_range
+            result[reference_position][1] = event_start + start_in_signal
+            result[reference_position][2] = event_end + start_in_signal
             if approximate_alignment.reverse_complement:
-                result[reference_position][1] = end_in_reference - reference_position
+                result[reference_position][0] = end_in_reference - reference_position - 1
             else:
-                result[reference_position][1] = start_in_reference + reference_position
+                result[reference_position][0] = start_in_reference + reference_position
         return approximate_alignment, result
 
 

@@ -96,8 +96,8 @@ def align_signal_command(args):
             output_file = open(os.path.join(args.output, basename + '.txt'), 'w')
         else:
             output_file = sys.stdout
-        output_file.write("signal_position\treference_position\n")
+        output_file.write("reference_position\tevent_start\tevent_end\n")
         for line in alignment:
-            output_file.write("{}\t{}\n".format(line[0], line[1]))
+            output_file.write("{}\n".format('\t'.join(line)))
         if args.output:
             output_file.close()
