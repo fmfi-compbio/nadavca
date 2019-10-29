@@ -30,7 +30,7 @@ class Genome:
             current = None
             for line in file:
                 if line[0] == '>':
-                    current = Genome(line.rstrip())
+                    current = Genome(line.rstrip().split(' ')[0])
                     result.append(current)
                 else:
                     current._append_line(line.rstrip())
