@@ -1,5 +1,6 @@
 #ifndef NADAVCA_NODE_H
 #define NADAVCA_NODE_H
+#include <expquad_function.h>
 #include <functional>
 #include <probability.h>
 #include <vector>
@@ -29,6 +30,15 @@ public:
                       const std::vector<Probability> &short_event_acceptability,
                       bool reverse = false);
   // short_event_acceptability must contain at least one element
+
+  static Node
+  NextRowSlow(int start_index, int end_index, const Node &predecessor,
+              const ExpQuadFunction &mean_distribution,
+              const ExpQuadFunction &noise_distribution,
+              std::vector<std::pair<double, Probability>> distribution_samples,
+              const std::vector<double> &signal,
+              const std::vector<Probability> &short_event_priors,
+              bool reverse = false);
 };
 
 class PathSearchingNode : public Node {

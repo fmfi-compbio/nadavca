@@ -37,6 +37,8 @@ class ProbabilityEstimator:
         self.bandwidth = config['bandwidth']
         self.snp_prior = config['snp_prior_probability']
         self.min_event_length = config['min_alignment_event_length']
+        self.distribution_samples_count = config['distribution_samples_count']
+        self.noise_sigma = config['noise_sigma']
         self.short_event_acceptability = config['short_event_acceptability']
         self.model_wobbling = config['model_wobbling']
         self.model_transitions = config['model_transitions']
@@ -84,6 +86,8 @@ class ProbabilityEstimator:
                 bandwidth=self.bandwidth,
                 short_event_acceptability=self.short_event_acceptability,
                 min_event_length=self.min_event_length,
+                distribution_samples_count=self.distribution_samples_count,
+                noise_sigma=self.noise_sigma,
                 kmer_model=self.kmer_model,
                 model_transitions=False
             )
@@ -180,6 +184,8 @@ class ProbabilityEstimator:
             bandwidth=self.bandwidth,
             short_event_acceptability=self.short_event_acceptability,
             min_event_length=self.min_event_length,
+            distribution_samples_count=self.distribution_samples_count,
+            noise_sigma = self.noise_sigma,
             kmer_model=self.kmer_model,
             model_transitions=self.model_transitions
         )

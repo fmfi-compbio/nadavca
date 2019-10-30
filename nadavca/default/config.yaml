@@ -4,6 +4,8 @@ min_alignment_event_length: 2
 short_event_acceptability:
   - 0.0
   - 0.0
+distribution_samples_count: 31
+noise_sigma: 0.2
 model_wobbling: True
 model_transitions: False
 tweak_signal_normalization: True

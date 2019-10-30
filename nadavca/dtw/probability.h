@@ -16,6 +16,7 @@ public:
 
   Probability &operator*=(const Probability &other);
   Probability &operator+=(const Probability &other);
+  Probability &operator/=(const Probability &other);
   Probability operator*(Probability other) const;
   Probability operator+(Probability other) const;
   Probability operator/(Probability other) const;

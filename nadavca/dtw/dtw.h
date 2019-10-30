@@ -17,5 +17,6 @@ std::vector<std::vector<int>> RefineAlignment(
     const std::vector<int> &context_after,
     const std::vector<std::vector<int>> &approximate_alignment, int bandwidth,
     const std::vector<double> &short_event_acceptability, int min_event_length,
+    int distribution_samples_count, double noise_sigma,
     const KmerModel &kmer_model, bool model_transitions);
 #endif

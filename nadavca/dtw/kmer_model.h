@@ -1,5 +1,6 @@
 #ifndef NADAVCA_KMER_MODEL_H
 #define NADAVCA_KMER_MODEL_H
+#include <expquad_function.h>
 #include <functional>
 #include <probability.h>
 #include <sequence.h>
@@ -23,6 +24,13 @@ public:
   std::vector<double> GetExpectedSignal(const std::vector<int> &reference,
                                         const std::vector<int> &context_before,
                                         const std::vector<int> &context_after);
+
+  ExpQuadFunction GetDistributionExpQuad(const ExtendedSequence *sequence,
+                                         int index) const;
+  std::vector<std::pair<double, Probability>>
+  GetDistributionSamples(const ExtendedSequence *sequence, int index,
+                         int samples_count) const;
+
   std::function<Probability(double)>
   GetDistribution(const ExtendedSequence *sequence, int index) const;
   std::function<Probability(double)>

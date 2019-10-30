@@ -41,6 +41,40 @@ vector<double> KmerModel::GetExpectedSignal(const vector<int> &reference,
   return result;
 }
 
+ExpQuadFunction
+KmerModel::GetDistributionExpQuad(const ExtendedSequence *sequence,
+                                  int index) const {
+  int kmer_id = GetKmerId(sequence, index);
+  double a = -multiplicative_constant_[kmer_id];
+  double b = 2 * multiplicative_constant_[kmer_id] * mean_[kmer_id];
+  double c =
+      additive_constant_[kmer_id] -
+      mean_[kmer_id] * mean_[kmer_id] * multiplicative_constant_[kmer_id];
+  return ExpQuadFunction(a, b, c);
+}
+
+vector<pair<double, Probability>>
+KmerModel::GetDistributionSamples(const ExtendedSequence *sequence, int index,
+                                  int samples_count) const {
+  int kmer_id = GetKmerId(sequence, index);
+  vector<pair<double, Probability>> result;
+  Probability sum = Probability::FromP(0.0);
+  double base_x = mean_[kmer_id] - 1.5;
+  double step = 3.0 / (samples_count - 1); // TODO quantils
+  for (int i = 0; i < samples_count; i++) {
+    double x = base_x + step * i;
+    double diff = x - mean_[kmer_id];
+    Probability y(additive_constant_[kmer_id] -
+                  diff * diff * multiplicative_constant_[kmer_id]);
+    sum += y;
+    result.emplace_back(x, y);
+  }
+  for (auto &sample : result) {
+    sample.second /= sum;
+  }
+  return result;
+}
+
 function<Probability(double)>
 KmerModel::GetDistribution(const ExtendedSequence *sequence, int index) const {
   int kmer_id = GetKmerId(sequence, index);

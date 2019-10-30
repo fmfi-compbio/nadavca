@@ -24,6 +24,11 @@ Probability &Probability::operator+=(const Probability &other) {
   return *this;
 }
 
+Probability &Probability::operator/=(const Probability &other) {
+  log_val_ -= other.log_val_;
+  return *this;
+}
+
 bool Probability::IsNan() { return log_val_ != log_val_; }
 
 Probability Probability::operator*(Probability other) const {

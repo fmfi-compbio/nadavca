@@ -1,5 +1,7 @@
 #include <node.h>
 
+using namespace std;
+
 Node::Node() = default;
 
 Node::Node(int start_index, int end_index, double p)
@@ -86,6 +88,114 @@ PathSearchingNode::NextRow(const Node &scores,
     }
     result.GetReference(i) = best_previous_score * scores[i];
     result.GetPrevious(i) = best_previous_index;
+  }
+  return result;
+}
+
+Node Node::NextRowSlow(
+    int start_index, int end_index, const Node &predecessor,
+    const ExpQuadFunction &mean_distribution,
+    const ExpQuadFunction &noise_distribution,
+    vector<pair<double, Probability>> mean_distribution_samples,
+    const vector<double> &signal, const vector<Probability> &short_event_priors,
+    bool reverse) {
+  Node result(start_index, end_index, 0);
+  int short_threshold = short_event_priors.size() - 1;
+  int samples_count = mean_distribution_samples.size();
+  if (reverse) {
+    vector<Probability> long_event_samples(samples_count,
+                                           Probability::FromP(0));
+
+    if (end_index + short_threshold < predecessor.end_index_) {
+      ExpQuadFunction current_distribution;
+      for (int i = end_index + 1; i <= predecessor.end_index_; i++) {
+        current_distribution *=
+            noise_distribution.ShiftMaximumPoint(signal[i - 1]);
+        if (i - end_index > short_threshold) {
+          for (int j = 0; j < samples_count; j++) {
+            long_event_samples[j] +=
+                current_distribution.Value(mean_distribution_samples[j].first) *
+                mean_distribution_samples[j].second * predecessor[i];
+          }
+        }
+      }
+    }
+    for (int i = end_index; i >= start_index; i--) {
+      Probability &current = result.GetReference(i);
+      for (const Probability &p : long_event_samples) {
+        current += p;
+      }
+      ExpQuadFunction current_distribution;
+      for (int j = i; j <= i + short_threshold && j <= predecessor.end_index_;
+           j++) {
+        if (j > i) {
+          current_distribution *=
+              noise_distribution.ShiftMaximumPoint(signal[j - 1]);
+        }
+        current += (current_distribution * mean_distribution).Integral() *
+                   predecessor[j] * short_event_priors[j - i];
+      }
+      if (i + short_threshold <= predecessor.end_index_ &&
+          i - 1 >= start_index) {
+        ExpQuadFunction nextSignalpointDistribution =
+            noise_distribution.ShiftMaximumPoint(signal[i - 1]);
+        for (int j = 0; j < samples_count; j++) {
+          long_event_samples[j] +=
+              current_distribution.Value(mean_distribution_samples[j].first) *
+              mean_distribution_samples[j].second *
+              predecessor[i + short_threshold];
+          long_event_samples[j] *= nextSignalpointDistribution.Value(
+              mean_distribution_samples[j].first);
+        }
+      }
+    }
+
+  } else {
+    vector<Probability> long_event_samples(samples_count,
+                                           Probability::FromP(0));
+
+    if (start_index - short_threshold > predecessor.start_index_) {
+      ExpQuadFunction current_distribution;
+      for (int i = start_index - 1; i >= predecessor.start_index_; i--) {
+        current_distribution *= noise_distribution.ShiftMaximumPoint(signal[i]);
+        if (start_index - i > short_threshold) {
+          for (int j = 0; j < samples_count; j++) {
+            long_event_samples[j] +=
+                current_distribution.Value(mean_distribution_samples[j].first) *
+                mean_distribution_samples[j].second * predecessor[i];
+          }
+        }
+      }
+    }
+    for (int i = start_index; i <= end_index; i++) {
+      Probability &current = result.GetReference(i);
+      for (const Probability &p : long_event_samples) {
+        current += p;
+      }
+      ExpQuadFunction current_distribution;
+      for (int j = i; j >= i - short_threshold && j >= predecessor.start_index_;
+           j--) {
+        if (j < i) {
+          current_distribution *=
+              noise_distribution.ShiftMaximumPoint(signal[j]);
+        }
+        current += (current_distribution * mean_distribution).Integral() *
+                   predecessor[j] * short_event_priors[i - j];
+      }
+      if (i - short_threshold >= predecessor.start_index_ &&
+          i + 1 <= end_index) {
+        ExpQuadFunction nextSignalpointDistribution =
+            noise_distribution.ShiftMaximumPoint(signal[i]);
+        for (int j = 0; j < samples_count; j++) {
+          long_event_samples[j] +=
+              current_distribution.Value(mean_distribution_samples[j].first) *
+              mean_distribution_samples[j].second *
+              predecessor[i - short_threshold];
+          long_event_samples[j] *= nextSignalpointDistribution.Value(
+              mean_distribution_samples[j].first);
+        }
+      }
+    }
   }
   return result;
 }

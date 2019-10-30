@@ -26,7 +26,8 @@ ext_modules = [
                  'nadavca/dtw/sequence.cpp',
                  'nadavca/dtw/joining_strategy.cpp',
                  'nadavca/dtw/node.cpp',
-                 'nadavca/dtw/dtw.cpp'],
+                 'nadavca/dtw/dtw.cpp',
+                 'nadavca/dtw/expquad_function.cpp'],
         include_dirs=[
             'nadavca/dtw/',
             # Path to pybind11 headers
