@@ -3,6 +3,20 @@
 #include <kmer_model.h>
 using namespace std;
 
+double getNorm(double nu) {
+  double pi = 4.0 * atan( 1.0 );
+  return log(tgamma( 0.5 * ( nu + 1.0 ) ) / tgamma( 0.5 * nu ) / sqrt( nu * pi ));
+}
+
+const double df = 4.7;
+const double std_factor = 0.24;
+const double studentNorm = getNorm(df);
+
+double studentLogPdf(double x) {   // pdf of the student's t distribution
+    x = x / std_factor;
+    return studentNorm + log( 1.0 + x * x / df) * ( -0.5 * ( df + 1.0 ) ) - log(std_factor);
+}
+
 KmerModel::KmerModel(int k, int central_position, int alphabet_size,
                      vector<double> mean, vector<double> sigma)
     : k_(k), central_position_(central_position), alphabet_size_(alphabet_size),
@@ -48,6 +62,7 @@ KmerModel::GetDistribution(const ExtendedSequence *sequence, int index) const {
     double diff = x - mean_[kmer_id];
     return Probability(additive_constant_[kmer_id] -
                        diff * diff * multiplicative_constant_[kmer_id]);
+//    return Probability(studentLogPdf(diff));
   };
 }
 
