@@ -1,6 +1,7 @@
 Copyright (c) 2018 Eduard Batmendijn
 
-This repository contains a file from [nanoporetech/tombo](https://github.com/nanoporetech/tombo) package,
+This repository contains a (modified version of a) file from 
+[nanoporetech/tombo](https://github.com/nanoporetech/tombo) package,
 which is licensed under [Mozilla Public License, v. 2.0](https://www.mozilla.org/en-US/MPL/2.0/).
 
 The above-mentioned file is `nadavca/default/kmer_model.hdf5` which corresponds to (a revision of)
