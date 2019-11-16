@@ -14,7 +14,7 @@ def kmer_to_id(kmer):
 def load_kmer_model(filename):
     with h5py.File(filename, "r") as file:
         central_position = file.attrs["central_pos"]
-        model_table = file["model"]
+        model_table = file["model"][()]
         mean = np.zeros(len(model_table))
         sigma = np.zeros(len(model_table))
         k = None

@@ -83,6 +83,7 @@ KmerModel::GetTransitionDistribution(const ExtendedSequence *sequence,
   double ac = log(1 / sqrt(2 * M_PI * sigma * sigma) * 0.1);
   double mc = 1 / (2 * sigma * sigma);
   return [mean1, mean2, p_in, p_out, mean, sigma, ac, mc](double x) {
+    return p_in;
     if (x < mean1 || x > mean2)
       return p_out;
     //    return p_in;

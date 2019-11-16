@@ -33,7 +33,8 @@ class ApproximateAligner:
         self.bwapy_aligner = None
         try:
             from bwapy import BwaAligner
-            self.bwapy_aligner = BwaAligner(reference_filename)
+            options = '-x ont2d'
+            self.bwapy_aligner = BwaAligner(reference_filename, options=options)
         except ImportError:
             sys.stderr.write("Could't import bwapy, will use bwa executable to align reads\n")
 
