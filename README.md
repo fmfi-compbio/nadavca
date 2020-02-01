@@ -6,7 +6,7 @@ NAnopore DAta Variant CAller
 Run:
 
 ```
-git clone git@github.com:baklazan/nadavca.git
+git clone git@github.com:fmfi-compbio/nadavca.git
 cd nadavca
 python3 setup.py build
 python3 setup.py install
