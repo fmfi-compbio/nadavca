@@ -48,7 +48,7 @@ int &PathSearchingNode::GetPrevious(int index) {
 int PathSearchingNode::GetBestIndex() const {
   Probability best = Probability::FromP(0.0);
   int result = -1;
-  for (int i = start_index_; i < end_index_; i++) {
+  for (int i = start_index_; i <= end_index_; i++) {
     if ((*this)[i] > best) {
       best = (*this)[i];
       result = i;

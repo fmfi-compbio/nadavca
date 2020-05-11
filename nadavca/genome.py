@@ -3,15 +3,14 @@ import numpy
 
 class Genome:
     def __init__(self, desc_line=None):
-        self.bases = []
         self.description = desc_line
+        self.lines = []
 
     def _append_line(self, line):
-        for base in line:
-            self.bases.append(base)
+        self.lines.append(line)
 
     def _convert_to_numpy(self):
-        self.bases = numpy.array(self.bases)
+        self.bases = numpy.array(list("".join(self.lines)))
 
     @staticmethod
     def to_numerical(sequence):
@@ -31,9 +30,11 @@ class Genome:
             for line in file:
                 if line[0] == '>':
                     current = Genome(line.rstrip())
+                    print("go", line.rstrip())
                     result.append(current)
                 else:
                     current._append_line(line.rstrip())
+        print("convert to numpy")
         for genome in result:
             genome._convert_to_numpy()
         return result

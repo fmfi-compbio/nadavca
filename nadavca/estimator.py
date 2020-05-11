@@ -181,6 +181,9 @@ class ProbabilityEstimator:
             model_transitions=self.model_transitions
         )
 
+        if len(refined_alignment) == 0: # There was no valid path in our band (bad alignment)
+            return None
+
         result = numpy.zeros((len(refined_alignment), 3), dtype=int)
         for reference_position, event_range in enumerate(refined_alignment):
             event_start, event_end = event_range

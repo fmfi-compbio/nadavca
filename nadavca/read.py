@@ -3,6 +3,7 @@ import h5py
 import numpy
 from scipy import interpolate
 from nadavca.genome import Genome
+import numpy as np
 
 
 class Read:
@@ -30,10 +31,10 @@ class Read:
         read = Read()
         with h5py.File(filename, 'r') as file:
             read_group = list(file['Raw/Reads'].values())[0]
-            read.raw_signal = numpy.array(read_group['Signal'].value)
+            read.raw_signal = numpy.array(read_group['Signal'][()])
             events = file['{}/BaseCalled_template/Events'.format(basecall_group)]
             read.sequence_to_signal_mapping = Read._extract_sequence_to_signal_mapping(events)
-            read.fastq = file['{}/BaseCalled_template/Fastq'.format(basecall_group)].value.decode(
+            read.fastq = file['{}/BaseCalled_template/Fastq'.format(basecall_group)][()].decode(
                 'ascii')
             read.sequence = Genome.create_from_fastq_string(read.fastq)[0].bases
         return read
@@ -52,7 +53,7 @@ class Read:
         shift = statistics.median(values)
         scale = statistics.median(abs(values - shift))
         for read in reads:
-            read.normalized_signal = (read.raw_signal - shift) / scale
+            read.normalized_signal = np.clip((read.raw_signal - shift) / scale, -5, 5)
 
     def tweak_signal_normalization(self, alignment, expected_means):
         data = []
