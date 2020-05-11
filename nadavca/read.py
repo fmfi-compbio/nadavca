@@ -3,6 +3,7 @@ import h5py
 import numpy
 from scipy import interpolate
 from nadavca.genome import Genome
+import numpy as np
 
 
 class Read:
@@ -52,7 +53,7 @@ class Read:
         shift = statistics.median(values)
         scale = statistics.median(abs(values - shift))
         for read in reads:
-            read.normalized_signal = (read.raw_signal - shift) / scale
+            read.normalized_signal = np.clip((read.raw_signal - shift) / scale, -5, 5)
 
     def tweak_signal_normalization(self, alignment, expected_means):
         data = []

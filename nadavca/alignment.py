@@ -147,6 +147,9 @@ class ApproximateAligner:
         base_mapping, is_reverse_complement, contig_name = base_alignment
         signal_mapping = self.convert_mapping(base_mapping, read)
 
+        if len(signal_mapping) == 0:
+            return None
+
         start_in_reference = signal_mapping[0][1]
         end_in_reference = signal_mapping[-1][1] + 1
         signal_mapping[:, 1] -= start_in_reference
