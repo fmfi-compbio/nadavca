@@ -208,9 +208,11 @@ vector<vector<int>> RefineAlignment(
                                        min_event_lengths[i - 1]);
   }
 
-  vector<vector<int>> result(reference.size(), vector<int>(2));
   int best_index = dp[rows_count - 1].GetBestIndex();
+  if (best_index == -1)
+    return vector<vector<int>>(0);
 
+  vector<vector<int>> result(reference.size(), vector<int>(2));
   for (int i = rows_count - 1; i >= 0; i--) {
     if (model_transitions) {
       result[i / 2][i % 2] = best_index;
