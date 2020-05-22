@@ -1,3 +1,8 @@
+TODO:
+transitions config
+custom models
+renorm
+
 # Nadavca
 NAnopore DAta Variant CAller
 

@@ -2,6 +2,7 @@
 import argparse
 from nadavca.estimate_snps import estimate_snps_command
 from nadavca.align_signal import align_signal_command
+from nadavca.detect_meth import detect_meth_command
 import nadavca.defaults
 
 parser = argparse.ArgumentParser()
@@ -15,11 +16,12 @@ parser.add_argument("-g", "--group_name",
                     default=nadavca.defaults.GROUP_NAME)
 parser.add_argument("reference", help="reference fasta file")
 parser.add_argument("read_basedir", help="base directory of fast5 files")
-parser.add_argument("-b", "--bwa_executable", help="command used to run bwa-mem (e. g. bwa)",
+parser.add_argument("-b", "--bwa_executable", help="Command used to run bwa-mem (e. g. bwa). Only used if bwapy is unavailable",
                     default=nadavca.defaults.BWA_EXECUTABLE)
 parser.add_argument("-c", "--configuration",
                     help="config file with parameters for estimator/aligner",
                     default=nadavca.defaults.CONFIG_FILE)
+parser.add_argument("-t", "--threads", type=int, default=1, help="Number of threads to use, applies only to detect meth")
 
 parser_snp = subparsers.add_parser("snp", help="estimate SNPs")
 parser_snp.add_argument("-i", "--independent",
@@ -36,6 +38,15 @@ parser_align.add_argument("-o", "--output",
                           help="output directory for alignments (default: print everything to "
                                "stdout)")
 parser_align.set_defaults(function=align_signal_command)
+
+parser_meth = subparsers.add_parser("meth", help="detect methylation")
+parser_meth.add_argument("-o", "--output",
+                          help="output directory for methylation scores (default: print everything to "
+                               "stdout)")
+parser_meth.add_argument("-p", "--pattern", type=str, required=True, help="Pattern to detect")
+parser_meth.add_argument("-r", "--renorm_rounds", type=int, default=3, help="Number of alternating renorm and realign rounds")
+
+parser_meth.set_defaults(function=detect_meth_command)
 
 args = parser.parse_args()
 
