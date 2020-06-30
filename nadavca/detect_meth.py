@@ -5,6 +5,7 @@ from nadavca.kmer_model import KmerModel
 from nadavca.read import Read
 from nadavca.alignment import ApproximateAligner
 from nadavca.estimator import ProbabilityEstimator, Chunk
+from nadavca.align_signal import load_model_and_estimator
 import nadavca.defaults
 import numpy as np
 from scipy.stats import linregress
@@ -13,35 +14,7 @@ import csv
 
 import yaml
 
-def load_model_and_estimator(reference_filename, config=nadavca.defaults.CONFIG_FILE,
-                     kmer_model=None,
-                     bwa_executable=nadavca.defaults.BWA_EXECUTABLE):
-    if kmer_model is None:
-        kmer_model=nadavca.defaults.KMER_MODEL_FILE,
-    if isinstance(config, str):
-        try:
-            with open(config, 'r') as file:
-                config = yaml.load(file)
-        except FileNotFoundError:
-            sys.stderr.write('failed to load config: {} not found\n'.format(config))
-            return None
 
-    if isinstance(kmer_model, str):
-        kmer_model = KmerModel.load_from_hdf5(kmer_model)
-
-    print("kmer model loaded")
-    try:
-        references = Genome.load_from_fasta(reference_filename)
-        references_dict = {r.description[1:]: r.bases for r in references}
-    except FileNotFoundError:
-        sys.stderr.write(
-            "failed to process: reference {} doesn't exist\n".format(reference_filename))
-        return None
-    print("genome loaded")
-
-    approximate_aligner = ApproximateAligner(bwa_executable, None, reference_filename,
-    references_dict)
-    return kmer_model, ProbabilityEstimator(kmer_model, approximate_aligner, config)
 
 SMALLEST_PVAL = 1e-50
 
