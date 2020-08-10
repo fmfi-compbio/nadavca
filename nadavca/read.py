@@ -27,13 +27,38 @@ class Read:
         return mapping
 
     @staticmethod
-    def load_from_fast5(filename, basecall_group):
+    def _extract_sequence_to_signal_mapping_from_moves(moves, signal_start, signal_step):
+        mapping = {}
+        sequence_index = 0
+        base_pos = 0
+        signal_pos = signal_start
+
+        for row in moves:
+            if row == 1:
+                mapping[base_pos] = int(signal_pos)
+            base_pos += row
+            signal_pos += signal_step
+        return mapping        
+
+    @staticmethod
+    def load_from_fast5(filename, basecall_group, segmentation_group="Analyses/Segmentation_000"):
         read = Read()
         with h5py.File(filename, 'r') as file:
             read_group = list(file['Raw/Reads'].values())[0]
             read.raw_signal = numpy.array(read_group['Signal'][()])
-            events = file['{}/BaseCalled_template/Events'.format(basecall_group)]
-            read.sequence_to_signal_mapping = Read._extract_sequence_to_signal_mapping(events)
+            try:
+                events = file['{}/BaseCalled_template/Events'.format(basecall_group)]
+                read.sequence_to_signal_mapping = Read._extract_sequence_to_signal_mapping(events)
+            except:
+                try:
+                    moves = file['{}/BaseCalled_template/Move'.format(basecall_group)]
+                    signal_start = file["{}/Summary/segmentation".format(segmentation_group)].attrs["first_sample_template"]
+                    signal_step = file["{}/Summary/basecall_1d_template".format(basecall_group)].attrs["block_stride"]
+                    read.sequence_to_signal_mapping = \
+                        Read._extract_sequence_to_signal_mapping_from_moves(moves, signal_start, signal_step)
+                except:
+                    print("Cannot find Events or Move table from basecaller.")
+                    raise
             read.fastq = file['{}/BaseCalled_template/Fastq'.format(basecall_group)][()].decode(
                 'ascii')
             read.sequence = Genome.create_from_fastq_string(read.fastq)[0].bases
